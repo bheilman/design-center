@@ -1,0 +1,84 @@
+body common control
+{
+      bundlesequence => { cfsketch_g, cfsketch_run };
+      inputs => { @(cfsketch_g.inputs) };
+}
+
+
+# environment common bundles
+
+# environment cf_sketch_testing
+bundle common cf_sketch_testing
+{
+  vars:
+      "activated" string => "1";
+      "env_vars" slist => { "activated", "test", "verbose" };
+      "test" string => "1";
+      "verbose" string => "1";
+  classes:
+      "runenv_cf_sketch_testing_activated" expression => "any";
+      "runenv_cf_sketch_testing_test" expression => "any";
+      "runenv_cf_sketch_testing_verbose" expression => "any";
+}
+
+
+# activation data
+bundle common cfsketch_g
+{
+  vars:
+      # Files that need to be loaded for the activated sketches and
+      # their dependencies.
+      "inputs" slist => { "../../libraries/dclib/library.cf", "../../libraries/copbl/cfengine_stdlib.cf", "main.cf" };
+}
+
+bundle agent cfsketch_run
+{
+  vars:
+
+      # array 'metadata' from definition sketch metadata, activation ___001_Packages_Generic_install
+      "___001_Packages_Generic_install_metadata[authors]" slist => { "Ben Heilman <bheilman@enova.com>" };
+      "___001_Packages_Generic_install_metadata[depends]" slist => { "CFEngine::dclib", "CFEngine::stdlib" };
+      "___001_Packages_Generic_install_metadata[license]" string => "MIT";
+      "___001_Packages_Generic_install_metadata[location]" string => "/home/bheilman/.cfagent/inputs/sketches/utilities/packages";
+      "___001_Packages_Generic_install_metadata[manifest]" slist => { "README.md", "main.cf", "params/demo.json", "test.cf" };
+      "___001_Packages_Generic_install_metadata[manifest_cf]" slist => { "main.cf", "test.cf" };
+      "___001_Packages_Generic_install_metadata[manifest_docs]" slist => { "README.md" };
+      "___001_Packages_Generic_install_metadata[manifest_exe]" slist => { "cf_null" };
+      "___001_Packages_Generic_install_metadata[manifest_extra]" slist => { "params/demo.json" };
+      "___001_Packages_Generic_install_metadata[name]" string => "Packages::Generic";
+      "___001_Packages_Generic_install_metadata[tags]" slist => { "cfdc" };
+      "___001_Packages_Generic_install_metadata[version]" string => "1.0.0";
+      "___001_Packages_Generic_install_metadata[arguments]" slist => { "package", "version", "release", };
+
+      # array 'metadata' from definition sketch metadata, activation ___002_Packages_Generic_install
+      "___002_Packages_Generic_install_metadata[authors]" slist => { "Ben Heilman <bheilman@enova.com>" };
+      "___002_Packages_Generic_install_metadata[depends]" slist => { "CFEngine::dclib", "CFEngine::stdlib" };
+      "___002_Packages_Generic_install_metadata[license]" string => "MIT";
+      "___002_Packages_Generic_install_metadata[location]" string => "/home/bheilman/.cfagent/inputs/sketches/utilities/packages";
+      "___002_Packages_Generic_install_metadata[manifest]" slist => { "README.md", "main.cf", "params/demo.json", "test.cf" };
+      "___002_Packages_Generic_install_metadata[manifest_cf]" slist => { "main.cf", "test.cf" };
+      "___002_Packages_Generic_install_metadata[manifest_docs]" slist => { "README.md" };
+      "___002_Packages_Generic_install_metadata[manifest_exe]" slist => { "cf_null" };
+      "___002_Packages_Generic_install_metadata[manifest_extra]" slist => { "params/demo.json" };
+      "___002_Packages_Generic_install_metadata[name]" string => "Packages::Generic";
+      "___002_Packages_Generic_install_metadata[tags]" slist => { "cfdc" };
+      "___002_Packages_Generic_install_metadata[version]" string => "1.0.0";
+      "___002_Packages_Generic_install_metadata[arguments]" slist => { "package", "version", "release", };
+
+  methods:
+    any::
+      "cfsketch_g" usebundle => "cfsketch_g";
+      "cf_sketch_testing" usebundle => "cf_sketch_testing";
+
+    runenv_cf_sketch_testing_activated::
+      "___001_Packages_Generic_install" usebundle => cfdc_packages:install("cf_sketch_testing", "default:cfsketch_run.___001_Packages_Generic_install_metadata", "git", "1:1.7.10.4-1~bpo60+1", "squeeze-backports"), ifvarclass => "linux", useresult => "return____001_Packages_Generic_install";
+    runenv_cf_sketch_testing_activated::
+      "___002_Packages_Generic_install" usebundle => cfdc_packages:install("cf_sketch_testing", "default:cfsketch_run.___002_Packages_Generic_install_metadata", "curl", "", ""), ifvarclass => "linux", useresult => "return____002_Packages_Generic_install";
+
+  reports:
+    inform_mode::
+      "activation ___001_Packages_Generic_install returned packages_verified = $(return____001_Packages_Generic_install[packages_verified])";
+      "activation ___001_Packages_Generic_install could not run because it requires classes linux" ifvarclass => "inform_mode.!(linux)";
+      "activation ___002_Packages_Generic_install returned packages_verified = $(return____002_Packages_Generic_install[packages_verified])";
+      "activation ___002_Packages_Generic_install could not run because it requires classes linux" ifvarclass => "inform_mode.!(linux)";
+}

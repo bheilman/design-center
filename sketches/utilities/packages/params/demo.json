@@ -1,0 +1,4 @@
+[
+    { "Packages::Generic": { package: "git", version: "1:1.7.10.4-1~bpo60+1", release: "squeeze-backports" } },
+    { "Packages::Generic": { package: "curl" } },
+]

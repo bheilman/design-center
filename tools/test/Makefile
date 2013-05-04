@@ -585,6 +585,10 @@ motd:
 	$(CFSKETCH_DA) --install System::motd --activate System::motd=$(SOURCEDIR)/system/motd/params/example.json
 	$(RUNNER)
 
+packages:
+	$(CFSKETCH_DA) --install Packages::Generic --activate Packages::Generic=$(SOURCEDIR)/utilities/packages/params/demo.json
+	$(RUNNER)
+
 bad_input_file:
 	$(CFSKETCH_DA) --install Data::Classes --activate Data::Classes=/no/such/file
 	$(RUNNER)

@@ -1,0 +1,34 @@
+body file control
+{
+      namespace => "cfdc_packages";
+}
+
+bundle agent install(runenv, metadata, package, version, release)
+{
+  classes:
+      "$(vars)" expression => "default:runenv_$(runenv)_$(vars)";
+      "not_$(vars)" expression => "!default:runenv_$(runenv)_$(vars)";
+
+      "$(arguments)" not => strcmp("$($(arguments))","");
+      "not_$(arguments)" expression => strcmp("$($(arguments))","");
+
+  vars:
+      "vars" slist => { "@(default:$(runenv).env_vars)" };
+      "$(vars)" string => "$(default:$(runenv).$(vars))";
+      
+      "arguments" slist => { "@($(metadata)[arguments])" };
+
+  methods:
+    verbose::
+      "metadata" usebundle => default:report_metadata($(this.bundle), $(metadata)),
+      inherit => "true";
+
+  reports:
+    verbose::
+      "$(this.bundle): imported environment '$(runenv)' var '$(vars)' with value '$($(vars))'";
+      "$(this.bundle): imported environment '$(runenv)' class '$(vars)' because 'default:runenv_$(runenv)_$(vars)' was defined"
+      ifvarclass => "$(vars)";
+
+    test::
+      "$(this.bundle): $(arguments) = $($(arguments))" ifvarclass => "$(arguments)";
+}
