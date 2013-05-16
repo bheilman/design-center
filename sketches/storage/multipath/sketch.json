@@ -1,0 +1,41 @@
+{
+    manifest:
+    {
+        "main.cf": { desc: "main file" },
+        "test.cf": { desc: "standalone test" },
+        "README.md": { documentation: true },
+        "templates/multipath.conf": { comment: "multipath.conf template file" },
+        "params/test.json": { comment: "" },
+    },
+
+    metadata:
+    {
+        name: "Storage::multipath",
+	    description: "Coalesce multiple storage paths",
+        version: "1.00",
+        license: "MIT",
+        tags: [ "cfdc" ],
+        authors: [ "Ben Heilman <bheilman@enova.com>" ],
+        depends: { "CFEngine::stdlib": { version: 105 }, "CFEngine::dclib": { version: "1.0.0" }, cfengine: { version: "3.4.0" }, os: [ "debian" ] }
+    },
+
+    api:
+    {
+        entry:
+        [
+            { type: "environment", name: "runenv", },
+            { type: "metadata", name: "metadata", },
+            { type: "string", name: "prefix", default: "__PREFIX__" },
+
+            { type: "string", name: "kernel_module", default: "dm_multipath", description: "optional, multipath kernel module to load" },
+            { type: "list", name: "packages", default: [], description: "optional, multipath packages to install" },
+            { type: "string", name: "config_path", default: "/etc/multipath.conf", description: "optional, multipath.conf location" },
+            { type: "string", name: "template_path", default: null },
+
+        ],
+    },
+
+    namespace: "cfdc_storage_multipath",
+    
+    interface: [ "main.cf" ],
+}

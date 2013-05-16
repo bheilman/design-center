@@ -1,0 +1,101 @@
+body file control
+{
+  namespace => "cfdc_storage_multipath";
+}
+
+bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config_path, template_path)
+{
+  vars:
+      "vars" slist => { "@(default:$(runenv).env_vars)" };
+      "$(vars)" string => "$(default:$(runenv).$(vars))";
+
+      "api" slist => getindices("$(metadata)[api]");
+      "type[$($(metadata)[api][$(api)][type])][$(api)]" string => "$($(metadata)[api][$(api)][type])";
+      "booleans" slist => getindices("type[boolean]");
+      "strings" slist => getindices("type[string]");
+      "lists" slist => getindices("type[list]");
+      "join[$(lists)]" string => join(", ",$(lists));
+
+      "install_dir" string => dirname("$(this.promise_filename)");
+
+    template_path::
+      "local_template_path" string => "$(template_path)";
+    null_template_path::
+      "local_template_path" string => "$(install_dir)/templates/multipath.conf";
+
+    test::
+      "owner" string => getenv("LOGNAME",100);
+      "local_config_path" string => "/tmp$(config_path)";
+    not_test::
+      "owner" string => "root";
+      "local_config_path" string => "$(config_path)";
+
+  classes:
+      "$(vars)" expression => "default:runenv_$(runenv)_$(vars)";
+      "not_$(vars)" expression => "!default:runenv_$(runenv)_$(vars)";
+
+      "$(booleans)" not => strcmp("$($(booleans))","");
+      "not_$(booleans)" expression => strcmp("$($(booleans))","");
+      "$(strings)" not => strcmp("$($(strings))","");
+      "null_$(strings)" expression => strcmp("$($(strings))","");
+      "$(lists)" expression => isgreaterthan(length("$(lists)"),0);
+      "empty_$(lists)" not => isgreaterthan(length("$(lists)"),0);
+
+  files:
+      "$(local_config_path)"
+      create => "true",
+      perms => default:mog("444",$(owner),$(owner)),
+      edit_template => $(local_template_path),
+      comment => "Deploy multipath configuration";
+
+  commands:
+    kernel_module.!test::
+      "$(default:paths.path[grep])"
+      args => "-E '^$(kernel_module) ' /proc/modules",
+      classes => default:dc_generic("$(prefix)_module_found"),
+      comment => "Determine if the kernel module is loaded";
+
+      "/sbin/modprobe"
+      args => "$(kernel_module)",
+      ifvarclass => "$(prefix)_module_found_not_ok",
+      classes => default:dc_generic("$(prefix)_module_load"),
+      comment => "Determine if the kernel module is loaded";
+      
+
+  packages:
+    packages.!test::
+      "$(packages)"
+      package_method => default:generic,
+      package_policy => "add",
+      classes => default:dc_generic("$(prefix)_install"),
+      comment => "Attempt to install given packages";
+
+      "$(packages)"
+      package_method => default:generic,
+      package_policy => "verify",
+      classes => default:dc_generic("$(prefix)_verify"),
+      comment => "Verify given packages";
+      
+  methods:
+    verbose::
+      "metadata" usebundle => default:report_metadata($(prefix), $(metadata)),
+      inherit => "true";
+
+  reports:
+    verbose::
+      "$(prefix): imported environment '$(runenv)' var '$(vars)' with value '$($(vars))'";
+      "$(prefix): imported environment '$(runenv)' class '$(vars)' because 'default:runenv_$(runenv)_$(vars)' was defined"
+      ifvarclass => "$(vars)";
+
+      "$(prefix): $(packages) installed" ifvarclass => "$(prefix)_install_repaired";
+      "$(prefix): $(packages) verified" ifvarclass => "$(prefix)_verify_ok";
+      "$(prefix): $(packages) not verified" ifvarclass => "$(prefix)_verify_not_ok";
+
+    test::
+      "$(prefix): parameter $(booleans) defined" ifvarclass => "$(booleans)";
+      "$(prefix): parameter $(booleans) not defined" ifvarclass => "not_$(booleans)";
+      "$(prefix): parameter $(strings) = $($(strings))" ifvarclass => "$(strings)";
+      "$(prefix): parameter $(strings) is null" ifvarclass => "null_$(strings)";
+      "$(prefix): parameter $(lists) = { $(join[$(lists)]) }" ifvarclass => "$(lists)";
+      "$(prefix): parameter $(lists) is empty" ifvarclass => "empty_$(lists)";
+}

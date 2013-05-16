@@ -600,6 +600,10 @@ packages_debian_single:
 	$(CFSKETCH_DA) --install Packages::Debian::single --activate Packages::Debian::single=$(SOURCEDIR)/package_management/debian/single/params/demo.json
 	$(RUNNER)
 
+storage_multipath:
+	$(CFSKETCH_DA) --install Storage::multipath --activate Storage::multipath=$(SOURCEDIR)/storage/multipath/params/test.json
+	$(RUNNER)
+
 access:
 	$(CFSKETCH_DA) --install System::access --activate System::access=$(SOURCEDIR)/security/access/params/example.json
 	$(RUNNER)

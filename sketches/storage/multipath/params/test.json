@@ -1,0 +1,6 @@
+{
+    "Storage::multipath":
+    {
+        "packages": [ "multipath-tools" ]
+    }
+}
