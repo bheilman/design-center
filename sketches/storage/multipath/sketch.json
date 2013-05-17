@@ -29,6 +29,7 @@
 
             { type: "string", name: "kernel_module", default: "dm_multipath", description: "optional, multipath kernel module to load" },
             { type: "list", name: "packages", default: [], description: "optional, multipath packages to install" },
+            { type: "array", name: "config", default: {}, description: "optional, config values for template" },
             { type: "string", name: "config_path", default: "/etc/multipath.conf", description: "optional, multipath.conf location" },
             { type: "string", name: "template_path", default: null },
 

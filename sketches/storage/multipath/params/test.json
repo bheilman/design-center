@@ -1,6 +1,62 @@
 {
     "Storage::multipath":
     {
-        "packages": [ "multipath-tools" ]
+        "packages": [ "multipath-tools" ],
+        "config": {
+            "defaults": {
+                "default_one": "some default value",
+                "default_two": "some other default value"
+            },
+            "blacklist": {
+                "wwid": {
+                    0: "blacklisted_WWN_one",
+                    1: "blacklisted_WWN_two"
+                },
+                "devnode": {
+                    0: "blacklisted_devnode_regex_one",
+                    1: "blacklisted_devnode_regex_two"
+                },
+                "device": {
+                    0: { "vendor": "blacklisted_vendor_one", "product": "*" },
+                    1: { "vendor": "blacklisted_vendor_two", "product": "*" }
+                }
+            },
+            "blacklist_exceptions": {
+                "wwid": {
+                    0: "excepted_WWN_one",
+                    1: "excepted_WWN_two"
+                },
+                "devnode": {
+                    0: "excepted_devnode_regex_one",
+                    1: "excepted_devnode_regex_two"
+                },
+                "device": {
+                    0: { "vendor": "excepted_vendor_one", "product": "*" },
+                    1: { "vendor": "excepted_vendor_two", "product": "*" }
+                }
+            },
+            "multipaths": {
+                "wwn_one": {
+                    "alias": "alias_one",
+                    "override": "some override"
+                },
+                "wwn_two": {
+                    "alias": "alias_two",
+                    "override": "some other override"
+                }
+            },
+            "devices": {
+                0: {
+                    "vendor": "vendor_one",
+                    "product": "product_one",
+                    "override": "some override"
+                },
+                1: {
+                    "vendor": "vendor_one",
+                    "product": "product_two",
+                    "override": "some other override"
+                }
+            }
+        }
     }
 }

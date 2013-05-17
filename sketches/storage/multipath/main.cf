@@ -3,7 +3,7 @@ body file control
   namespace => "cfdc_storage_multipath";
 }
 
-bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config_path, template_path)
+bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config, config_path, template_path)
 {
   vars:
       "vars" slist => { "@(default:$(runenv).env_vars)" };
@@ -41,13 +41,6 @@ bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config_pat
       "$(lists)" expression => isgreaterthan(length("$(lists)"),0);
       "empty_$(lists)" not => isgreaterthan(length("$(lists)"),0);
 
-  files:
-      "$(local_config_path)"
-      create => "true",
-      perms => default:mog("444",$(owner),$(owner)),
-      edit_template => $(local_template_path),
-      comment => "Deploy multipath configuration";
-
   commands:
     kernel_module.!test::
       "$(default:paths.path[grep])"
@@ -60,7 +53,6 @@ bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config_pat
       ifvarclass => "$(prefix)_module_found_not_ok",
       classes => default:dc_generic("$(prefix)_module_load"),
       comment => "Determine if the kernel module is loaded";
-      
 
   packages:
     packages.!test::
@@ -75,8 +67,11 @@ bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config_pat
       package_policy => "verify",
       classes => default:dc_generic("$(prefix)_verify"),
       comment => "Verify given packages";
-      
+
   methods:
+      "deploy_multipath_configuration_template"
+      usebundle => config($(local_config_path),$(local_template_path),$(config),$(owner));
+
     verbose::
       "metadata" usebundle => default:report_metadata($(prefix), $(metadata)),
       inherit => "true";
@@ -98,4 +93,99 @@ bundle agent entry(runenv, metadata, prefix, kernel_module, packages, config_pat
       "$(prefix): parameter $(strings) is null" ifvarclass => "null_$(strings)";
       "$(prefix): parameter $(lists) = { $(join[$(lists)]) }" ifvarclass => "$(lists)";
       "$(prefix): parameter $(lists) is empty" ifvarclass => "empty_$(lists)";
+}
+
+# Formal parameters have different names to work-around: https://cfengine.com/dev/issues/2634
+bundle agent config(multipath_config_path,multipath_template_path,config_array,config_owner)
+{
+  vars:
+      "sections" slist => { "defaults", "blacklist", "blacklist_exceptions", "multipaths", "devices" };
+      "$(sections)_indices" slist => getindices("$(config_array)[$(sections)]");
+
+  classes:
+      "sections_ready" expression => isvariable("sections");
+    sections_ready::
+      "$(sections)_empty" not => isgreaterthan(length("$(sections)_indices"),0);
+
+  files:
+      (blacklist_stanzas_ready|blacklist_empty).(blacklist_exceptions_stanzas_ready|blacklist_exceptions_empty).(devices_stanzas_ready|devices_empty).(multipaths_stanzas_ready|multipaths_empty)::
+      "$(multipath_config_path)"
+      create => "true",
+      perms => default:mog("444",$(config_owner),$(config_owner)),
+      edit_template => $(multipath_template_path),
+      comment => "Deploy multipath configuration";
+
+  methods:
+      "build_blacklist_stanza"
+      usebundle => build_blacklist("$(config_array)[blacklist]"),
+      classes => default:always("blacklist_stanzas_ready"),
+      useresult => "blacklist_section";
+
+      "build_blacklist_exceptions_stanza"
+      usebundle => build_blacklist("$(config_array)[blacklist_exceptions]"),
+      classes => default:always("blacklist_exceptions_stanzas_ready"),
+      useresult => "blacklist_exceptions_section";
+
+      "build_device_stanzas"
+      usebundle => build_device("$(config_array)[devices]","$(devices_indices)"),
+      classes => default:always("devices_stanzas_ready"),
+      useresult => "device_stanzas";
+
+      "build_multipath_stanzas"
+      usebundle => build_multipath("$(config_array)[multipaths]","$(multipaths_indices)"),
+      classes => default:always("multipaths_stanzas_ready"),
+      useresult => "multipath_stanzas";
+}
+
+# Formal parameters have different names to work-around: https://cfengine.com/dev/issues/2634
+bundle agent build_blacklist(blacklist_config_array) {
+  vars:
+      "blacklist_wwid" slist => getindices("$(blacklist_config_array)[wwid]");
+      "blacklist_devnode" slist => getindices("$(blacklist_config_array)[devnode]");
+      "blacklist_device" slist => getindices("$(blacklist_config_array)[device]");
+
+      "lines_wwid[$(blacklist_wwid)]" string => "  wwid \"$($(blacklist_config_array)[wwid][$(blacklist_wwid)])\"";
+      "lines_devnode[$(blacklist_devnode)]" string => "  devnode \"$($(blacklist_config_array)[devnode][$(blacklist_devnode)])\"";
+      "lines_device[$(blacklist_device)]" string => "  device {$(const.n)    vendor \"$($(blacklist_config_array)[device][$(blacklist_device)][vendor])\"$(const.n)    product \"$($(blacklist_config_array)[device][$(blacklist_device)][product])\"$(const.n)  }";
+
+      "lines_wwid" slist => getvalues("lines_wwid");
+      "lines_devnode" slist => getvalues("lines_devnode");
+      "lines_device" slist => getvalues("lines_device");
+      "lines" slist => { @(lines_wwid), @(lines_devnode), @(lines_device) };
+      "section" string => join("$(const.n)","lines");
+
+  reports:
+      "$(section)"
+      bundle_return_value_index => "0";
+}
+
+# Formal parameters have different names to work-around: https://cfengine.com/dev/issues/2634
+bundle agent build_multipath(multipath_config_array,multipath_wwid) {
+  vars:
+      "keywords" slist => getindices("$(multipath_config_array)[$(multipath_wwid)]");
+      "lines[$(keywords)]" string => "$(keywords) \"$($(multipath_config_array)[$(multipath_wwid)][$(keywords)])\"";
+      "lines" slist => getvalues("lines");
+      "stanza" string => join("$(const.n)    ","lines");
+
+  reports:
+      "  device {
+    wwid \"$(multipath_wwid)\"
+    $(stanza)
+  }"
+      bundle_return_value_index => "$(multipath_wwid)";
+}
+
+# Formal parameters have different names to work-around: https://cfengine.com/dev/issues/2634
+bundle agent build_device(device_config_array,device_index) {
+  vars:
+      "keywords" slist => getindices("$(device_config_array)[$(device_index)]");
+      "lines[$(keywords)]" string => "$(keywords) \"$($(device_config_array)[$(device_index)][$(keywords)])\"";
+      "lines" slist => getvalues("lines");
+      "stanza" string => join("$(const.n)    ","lines");
+
+  reports:
+      "  device {
+    $(stanza)
+  }"
+      bundle_return_value_index => "$(device_index)";
 }
