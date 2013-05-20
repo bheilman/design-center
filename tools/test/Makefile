@@ -622,6 +622,11 @@ tidy_dir:
 	$(CFSKETCH_DA) --install Utilities::tidy_dir --activate Utilities::tidy_dir=$(SOURCEDIR)/utilities/tidy_dir/params/demo.json
 	$(RUNNER)
 
+delete_unlisted_files:
+	$(CFSKETCH_DA) --install Utilities::delete_unlisted_files --activate Utilities::delete_unlisted_files=$(SOURCEDIR)/utilities/delete_unlisted_files/params/test.json
+	(cd $(SOURCEDIR); make); $(PWD)/../cf-sketch/cf-sketch.pl --expert --apitest Utilities::delete_unlisted_files
+#	$(RUNNER)
+
 memcached:
 	$(CFSKETCH_DA) --install Applications::Memcached --activate Applications::Memcached=$(SOURCEDIR)/applications/memcached/params/demo.json
 	$(RUNNER)

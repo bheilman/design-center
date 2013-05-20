@@ -1,0 +1,41 @@
+{
+    manifest:
+    {
+        "main.cf": { desc: "main file" },
+        "test.cf": { desc: "standalone test" },
+        "README.md": { documentation: true },
+        "test.pl": { test: true },
+        "params/test.json": { comment: "Testing parameter set" }
+    },
+
+    metadata:
+    {
+        name: "Utilities::delete_unlisted_files",
+	    description: "Delete files not in the given list",
+        version: "1.00",
+        license: "MIT",
+        tags: [ "cfdc" ],
+        authors: [ "Ben Heilman <bheilman@enova.com>" ],
+        depends: { "CFEngine::stdlib": { version: 105 }, "CFEngine::dclib": { version: "1.0.0" }, cfengine: { version: "3.4.0" }, os: [ "linux" ] }
+    },
+
+    api:
+    {
+        // this is the name of the bundle!
+        entry:
+        [
+            { type: "environment", name: "runenv", },
+            { type: "metadata", name: "mymetadata", },
+            { type: "string", name: "prefix", default: "__PREFIX__" },
+
+            { type: "string", name: "directory", description: "directory to delete files from" },
+            { type: "list", name: "files", description: "list for files to kept" },
+            { type: "string", name: "pattern", description: "only delete files matching this pattern" },
+            { type: "boolean", name: "delete_symlinks", default: true, description: "delete symlinks as well" }
+        ],
+    },
+
+    namespace: "cfdc_utilities_delete_unlisted_files",
+    
+    interface: [ "main.cf" ],
+}

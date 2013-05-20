@@ -1,0 +1,74 @@
+body common control
+{
+      bundlesequence => { cfsketch_g, cfsketch_run };
+      inputs => { @(cfsketch_g.inputs) };
+}
+
+
+# environment common bundles
+
+# environment cf_sketch_testing
+bundle common cf_sketch_testing
+{
+  vars:
+      "activated" string => "1";
+      "env_vars" slist => { "activated", "test", "verbose" };
+      "test" string => "1";
+      "verbose" string => "1";
+  classes:
+      "runenv_cf_sketch_testing_activated" expression => "any";
+      "runenv_cf_sketch_testing_test" expression => "any";
+      "runenv_cf_sketch_testing_verbose" expression => "any";
+}
+
+
+# activation data
+bundle common cfsketch_g
+{
+  vars:
+      # Files that need to be loaded for the activated sketches and
+      # their dependencies.
+      "inputs" slist => { "../../libraries/dclib/library.cf", "../../libraries/copbl/cfengine_stdlib.cf", "main.cf" };
+}
+
+bundle agent cfsketch_run
+{
+  vars:
+
+      # array 'mymetadata' from definition sketch metadata, activation ___001_Utilities_delete_unlisted_files_entry
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][delete_symlinks][type]" string => "boolean";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][directory][type]" string => "string";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][files][type]" string => "list";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][mymetadata][type]" string => "metadata";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][pattern][type]" string => "string";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][prefix][type]" string => "string";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[api][runenv][type]" string => "environment";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[authors]" slist => { "Ben Heilman <bheilman@enova.com>" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[depends]" slist => { "CFEngine::dclib", "CFEngine::stdlib" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[license]" string => "MIT";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[location]" string => "/home/bheilman/.cfagent/inputs/sketches/utilities/delete_unlisted_files";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[manifest]" slist => { "README.md", "main.cf", "params/test.json", "test.cf", "test.pl" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[manifest_cf]" slist => { "main.cf", "test.cf" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[manifest_docs]" slist => { "README.md" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[manifest_exe]" slist => { "cf_null" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[manifest_extra]" slist => { "params/test.json" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[manifest_test]" slist => { "test.pl" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[name]" string => "Utilities::delete_unlisted_files";
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[tags]" slist => { "cfdc" };
+      "___001_Utilities_delete_unlisted_files_entry_mymetadata[version]" string => "1.00";
+
+      # list 'files' from definition parameter definition from /home/bheilman/design-center/tools/test/../../sketches/utilities/delete_unlisted_files/params/test.json-1, activation ___001_Utilities_delete_unlisted_files_entry
+      "___001_Utilities_delete_unlisted_files_entry_files" slist => { "a.txt", "b.txt" };
+
+  methods:
+    any::
+      "cfsketch_g" usebundle => "cfsketch_g";
+      "cf_sketch_testing" usebundle => "cf_sketch_testing";
+
+    runenv_cf_sketch_testing_activated::
+      "___001_Utilities_delete_unlisted_files_entry" usebundle => cfdc_utilities_delete_unlisted_files:entry("cf_sketch_testing", "default:cfsketch_run.___001_Utilities_delete_unlisted_files_entry_mymetadata", "___001_Utilities_delete_unlisted_files_entry", "/tmp/blah", @(cfsketch_run.___001_Utilities_delete_unlisted_files_entry_files), ".+\\.txt$", "1"), ifvarclass => "linux", useresult => "return____001_Utilities_delete_unlisted_files_entry";
+
+  reports:
+    inform_mode::
+      "activation ___001_Utilities_delete_unlisted_files_entry could not run because it requires classes linux" ifvarclass => "inform_mode.!(linux)";
+}

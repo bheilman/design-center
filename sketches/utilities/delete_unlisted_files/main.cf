@@ -1,0 +1,93 @@
+body file control
+{
+      namespace => "cfdc_utilities_delete_unlisted_files";
+}
+
+bundle agent entry(runenv, metadata, prefix, directory, files, pattern, delete_symlinks)
+{
+  vars:
+      "vars" slist => { "@(default:$(runenv).env_vars)" };
+      "$(vars)" string => "$(default:$(runenv).$(vars))";
+
+      "api" slist => getindices("$(metadata)[api]");
+      "type[$($(metadata)[api][$(api)][type])][$(api)]" string => "$($(metadata)[api][$(api)][type])";
+      "booleans" slist => getindices("type[boolean]");
+      "strings" slist => getindices("type[string]");
+      "lists" slist => getindices("type[list]");
+      "join[$(lists)]" string => join(", ", $(lists));
+
+      "review"
+      slist => lsdir("$(directory)","$(pattern)","false"),
+      handle => "$(prefix)_vars_review",
+      comment => "Find all files in the directory that match the pattern";
+
+      "c_review[$(review)]"
+      string => canonify("$(review)"),
+      depends_on => { "$(prefix)_vars_review" },
+      comment => "Canonical version of files to scan";
+
+    not_delete_symlinks::
+      "types" slist => { "plain" };
+    delete_symlinks::
+      "types" slist => { "plain", "symlink" };
+
+  classes:
+      "$(vars)" expression => "default:runenv_$(runenv)_$(vars)";
+      "not_$(vars)" expression => "!default:runenv_$(runenv)_$(vars)";
+
+      "$(booleans)" not => strcmp("$($(booleans))","");
+      "not_$(booleans)" expression => strcmp("$($(booleans))","");
+      "$(strings)" not => strcmp("$($(strings))","");
+      "null_$(strings)" expression => strcmp("$($(strings))","");
+      "$(lists)" expression => isgreaterthan(length($(lists)),0);
+      "empty_$(lists)" not => isgreaterthan(length($(lists)),0);
+
+  files:
+    directory.pattern::
+      "$(directory)/$(review)"
+      pathtype => "literal",
+      file_select => not_in_list(@(files), @(types)),
+      delete => files_only,
+      classes => default:dc_generic("$(prefix)_$(c_review[$(review)])_delete"),
+      comment => "Delete found files not in the list";
+
+  methods:
+    verbose::
+      "metadata" usebundle => default:report_metadata($(this.bundle), $(metadata)),
+      inherit => "true";
+
+  reports:
+    verbose::
+      "$(this.bundle): imported environment '$(runenv)' var '$(vars)' with value '$($(vars))'";
+      "$(this.bundle): imported environment '$(runenv)' class '$(vars)' because 'default:runenv_$(runenv)_$(vars)' was defined"
+      ifvarclass => "$(vars)";
+
+      "$(prefix): parameter $(booleans) defined" ifvarclass => "$(booleans)";
+      "$(prefix): parameter $(booleans) not defined" ifvarclass => "not_$(booleans)";
+      "$(prefix): parameter $(strings) = $($(strings))" ifvarclass => "$(strings)";
+      "$(prefix): parameter $(strings) is null" ifvarclass => "null_$(strings)";
+      "$(prefix): parameter $(lists) = $(join[$(lists)])" ifvarclass => "$(lists)";
+      "$(prefix): parameter $(lists) is empty" ifvarclass => "empty_$(lists)";
+      "$(prefix): result = ok" ifvarclass => "$(prefix)_install_ok";
+      "$(prefix): result = not_ok" ifvarclass => "$(prefix)_install_not_ok";
+
+    test::
+      "$(prefix): deleted file $(directory)/$(review)"
+      ifvarclass => "$(prefix)_$(c_review[$(review)])_delete_repaired";
+
+      "$(prefix): kept file $(directory)/$(review)"
+      ifvarclass => "!($(prefix)_$(c_review[$(review)])_delete_ok|$(prefix)_$(c_review[$(review)])_delete_not_ok)";
+}
+
+body file_select not_in_list(files, types)
+{
+      leaf_name  => {  @(files) };
+      file_types => { @(types) };
+      file_result => "!leaf_name.file_types";
+}
+
+body delete files_only
+{
+      dirlinks => "keep";
+      rmdirs => "false";
+}
